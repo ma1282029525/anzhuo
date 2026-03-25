@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "last_updated": "2026-03-20",
+  "owner": "user",
+  "scope": "A-share intraday rulebook",
+  "disclaimer": "Rule-based reference only. Final trading decisions remain with the user.",
+  "rules": {
+    "buy": [],
+    "sell": [
+      {
+        "id": "sell-001",
+        "rule": "主力资金呈现买入或净流入，但股价没有同步拉升，反而继续走弱或下跌时，卖出。",
+        "trigger": [
+          "主力资金买入或净流入",
+          "股价未出现同步拉升",
+          "股价继续下跌或走弱"
+        ],
+        "action": "sell",
+        "tag": [
+          "资金价量背离",
+          "卖出"
+        ]
+      },
+      {
+        "id": "sell-002",
+        "rule": "早盘拉升后，股价跌破分时均价时，卖出。",
+        "trigger": [
+          "早盘出现明显拉升",
+          "股价回落并跌破分时均价"
+        ],
+        "action": "sell",
+        "tag": [
+          "早盘冲高回落",
+          "跌破均价",
+          "卖出"
+        ]
+      },
+      {
+        "id": "sell-003",
+        "rule": "早盘10分钟内，大单一直净流入时，卖出。",
+        "trigger": [
+          "开盘后10分钟内",
+          "大单持续净流入"
+        ],
+        "action": "sell",
+        "tag": [
+          "早盘10分钟",
+          "大单净流入",
+          "卖出"
+        ]
+      }
+    ],
+    "position": [],
+    "risk": [],
+    "watch": []
+  },
+  "analysis_template": {
+    "required_inputs": [
+      "ticker",
+      "market",
+      "current_price",
+      "intraday_trend",
+      "volume_change",
+      "news_or_catalyst",
+      "current_position"
+    ],
+    "output_sections": [
+      "trend_summary",
+      "matched_buy_rules",
+      "matched_sell_rules",
+      "risks",
+      "action_reference"
+    ]
+  },
+  "notes": []
+}

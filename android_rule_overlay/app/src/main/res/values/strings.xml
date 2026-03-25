@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">股票规则悬浮提醒</string>
+    <string name="main_title">股票规则悬浮提醒</string>
+    <string name="main_subtitle">把你的买卖纪律写成固定提醒，开启后会以安卓悬浮窗形式显示在同花顺等 App 上层。</string>
+    <string name="button_grant_permission">打开悬浮窗权限设置</string>
+    <string name="button_save">保存内容</string>
+    <string name="button_start_overlay">启动悬浮窗</string>
+    <string name="button_stop_overlay">关闭悬浮窗</string>
+    <string name="label_rules">提醒内容</string>
+    <string name="label_text_size">悬浮窗字号</string>
+    <string name="editor_hint">例如：&#10;1. 5日线下禁止买入&#10;2. 日内分时均线下禁止买入&#10;3. 冲高回落跌破均价先减仓</string>
+    <string name="resize_hint">悬浮窗启动后：按住顶部可拖动，按住右下角圆点可缩放，点顶部按钮可收起或展开。</string>
+    <string name="permission_granted">悬浮窗权限：已允许，可以直接启动悬浮窗。</string>
+    <string name="permission_missing">悬浮窗权限：未开启。首次使用请先授权，否则无法显示在其他 App 上层。</string>
+    <string name="text_size_value">当前字号：%1$dsp</string>
+    <string name="toast_saved">内容已保存</string>
+    <string name="overlay_title">交易纪律</string>
+    <string name="notification_title">股票规则悬浮提醒运行中</string>
+    <string name="notification_text">点击可返回编辑规则内容。</string>
+    <string name="notification_channel_name">悬浮提醒服务</string>
+    <string name="action_edit">编辑内容</string>
+    <string name="action_toggle">收起或展开</string>
+    <string name="action_close">关闭悬浮窗</string>
+    <string name="empty_rules_hint">还没有设置提醒内容，回到主界面填写后再启动。</string>
+    <string name="default_rules">1. 5日线下禁止买入&#10;2. 日内分时均线下禁止买入&#10;3. 主力资金净流入但股价不涨反跌，优先卖出</string>
+</resources>
