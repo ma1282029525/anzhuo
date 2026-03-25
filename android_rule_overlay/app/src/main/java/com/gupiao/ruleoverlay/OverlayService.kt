@@ -17,7 +17,6 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
-import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -32,10 +31,7 @@ class OverlayService : Service() {
 
     private var overlayView: View? = null
     private var layoutParams: WindowManager.LayoutParams? = null
-    private var bodyContainer: FrameLayout? = null
     private var rulesTextView: TextView? = null
-    private var toggleButton: ImageButton? = null
-    private var isCollapsed = false
 
     override fun onCreate() {
         super.onCreate()
@@ -83,16 +79,13 @@ class OverlayService : Service() {
         val view = LayoutInflater.from(this).inflate(R.layout.overlay_widget, null)
 
         val headerBar = view.findViewById<LinearLayout>(R.id.headerBar)
-        bodyContainer = view.findViewById(R.id.bodyContainer)
         rulesTextView = view.findViewById(R.id.textRules)
-        toggleButton = view.findViewById(R.id.buttonToggle)
-        val editButton = view.findViewById<ImageButton>(R.id.buttonEdit)
         val closeButton = view.findViewById<ImageButton>(R.id.buttonClose)
         val resizeHandle = view.findViewById<View>(R.id.resizeHandle)
 
         val params = WindowManager.LayoutParams(
-            config.width,
-            config.height,
+            max(minWidthPx(), config.width),
+            max(minHeightPx(), config.height),
             overlayWindowType(),
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
@@ -105,17 +98,6 @@ class OverlayService : Service() {
 
         headerBar.setOnTouchListener(createDragTouchListener())
         resizeHandle.setOnTouchListener(createResizeTouchListener())
-
-        toggleButton?.setOnClickListener {
-            setCollapsed(!isCollapsed, persist = true)
-        }
-
-        editButton.setOnClickListener {
-            val editIntent = Intent(this, MainActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            }
-            startActivity(editIntent)
-        }
 
         closeButton.setOnClickListener {
             stopSelf()
@@ -133,40 +115,59 @@ class OverlayService : Service() {
     }
 
     private fun applyConfig(config: OverlayConfig) {
-        rulesTextView?.text = config.content.ifBlank { getString(R.string.empty_rules_hint) }
+        rulesTextView?.text = formatRulesForDisplay(config.content)
         rulesTextView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, config.textSizeSp)
 
-        if (overlayView != null) {
-            val params = layoutParams ?: return
-            params.width = max(minWidthPx(), config.width)
-            params.x = config.x
-            params.y = config.y
-            updateOverlayLayout()
-        }
-
-        setCollapsed(config.collapsed, persist = false)
+        val params = layoutParams ?: return
+        params.width = max(minWidthPx(), config.width)
+        params.height = max(minHeightPx(), config.height)
+        params.x = config.x
+        params.y = config.y
+        updateOverlayLayout()
     }
 
-    private fun setCollapsed(collapsed: Boolean, persist: Boolean) {
-        isCollapsed = collapsed
-        bodyContainer?.visibility = if (collapsed) View.GONE else View.VISIBLE
-        toggleButton?.setImageResource(
-            if (collapsed) android.R.drawable.arrow_down_float
-            else android.R.drawable.arrow_up_float
-        )
-
-        val params = layoutParams ?: return
-        params.height = if (collapsed) {
-            WindowManager.LayoutParams.WRAP_CONTENT
-        } else {
-            max(minHeightPx(), settingsRepository.load().height)
+    private fun formatRulesForDisplay(raw: String): String {
+        val normalized = raw.replace("\r\n", "\n").trim()
+        if (normalized.isEmpty()) {
+            return getString(R.string.empty_rules_hint)
         }
-        updateOverlayLayout()
 
-        if (persist) {
-            settingsRepository.saveCollapsed(collapsed)
-            persistBounds()
+        val collected = mutableListOf<String>()
+        val numberSplitRegex = Regex("(?=\\d+\\s*[.、])")
+
+        for (line in normalized.split("\n")) {
+            val trimmedLine = line.trim()
+            if (trimmedLine.isEmpty()) continue
+
+            val pieces = numberSplitRegex
+                .split(trimmedLine)
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+
+            if (pieces.isEmpty()) continue
+
+            if (pieces.size == 1) {
+                collected.add(cleanRuleText(pieces[0]))
+            } else {
+                for (piece in pieces) {
+                    collected.add(cleanRuleText(piece))
+                }
+            }
         }
+
+        if (collected.isEmpty()) {
+            return getString(R.string.empty_rules_hint)
+        }
+
+        return collected
+            .mapIndexed { index, item -> "${index + 1}. $item" }
+            .joinToString("\n\n")
+    }
+
+    private fun cleanRuleText(text: String): String {
+        return text
+            .replace(Regex("^\\d+\\s*[.、]\\s*"), "")
+            .trim()
     }
 
     private fun createDragTouchListener(): View.OnTouchListener {
@@ -221,16 +222,12 @@ class OverlayService : Service() {
             private var startRawY = 0f
 
             override fun onTouch(v: View?, event: MotionEvent): Boolean {
-                if (isCollapsed) {
-                    return true
-                }
-
                 val params = layoutParams ?: return false
 
                 when (event.actionMasked) {
                     MotionEvent.ACTION_DOWN -> {
                         startWidth = params.width
-                        startHeight = if (params.height > 0) params.height else settingsRepository.load().height
+                        startHeight = params.height
                         startRawX = event.rawX
                         startRawY = event.rawY
                         return true
@@ -258,12 +255,11 @@ class OverlayService : Service() {
 
     private fun persistBounds() {
         val params = layoutParams ?: return
-        val storedHeight = if (isCollapsed) settingsRepository.load().height else params.height
         settingsRepository.saveBounds(
             x = params.x,
             y = params.y,
             width = params.width,
-            height = storedHeight
+            height = params.height
         )
     }
 
@@ -282,9 +278,7 @@ class OverlayService : Service() {
         }
         overlayView = null
         layoutParams = null
-        bodyContainer = null
         rulesTextView = null
-        toggleButton = null
         stopForeground(STOP_FOREGROUND_REMOVE)
     }
 
